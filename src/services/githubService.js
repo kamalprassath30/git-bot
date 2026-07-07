@@ -5,13 +5,13 @@ const octokit = new Octokit({
   auth: process.env.GITHUB_TOKEN,
 });
 
-async function addLabel(issueNumber, label) {
+async function addLabel(owner, repo, issueNumber, label) {
   console.log("GitHub Session:", githubSession);
   console.log(`Adding label "${label}" to issue #${issueNumber}`);
 
   console.log({
-    owner: githubSession.selectedRepo.owner,
-    repo: githubSession.selectedRepo.repo,
+    owner: owner,
+    repo: repo,
     issueNumber,
     tokenExists: !!process.env.GITHUB_TOKEN,
   });

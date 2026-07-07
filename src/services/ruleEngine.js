@@ -8,6 +8,8 @@ async function processEvent(eventType, payload) {
 
   let title;
   let number;
+  let owner;
+  let repo;
 
   // Extract common data from different GitHub events
   if (eventType === "issues") {
@@ -20,6 +22,8 @@ async function processEvent(eventType, payload) {
     }
     title = payload.issue.title;
     number = payload.issue.number;
+    owner = payload.repository.owner.login;
+    repo = payload.repository.name;
   } else if (eventType === "pull_request") {
     if (payload.action !== "opened") {
       return {
@@ -30,6 +34,8 @@ async function processEvent(eventType, payload) {
     }
     title = payload.pull_request.title;
     number = payload.pull_request.number;
+    owner = payload.repository.owner.login;
+    repo = payload.repository.name;
   } else {
     return {
       success: true,
@@ -54,7 +60,7 @@ async function processEvent(eventType, payload) {
 
       for (const action of rule.actions) {
         if (action === "ADD_LABEL") {
-          const result = await addLabel(number, rule.keyword);
+          const result = await addLabel(owner, repo, number, rule.keyword);
 
           actionResults.push(result);
         }
