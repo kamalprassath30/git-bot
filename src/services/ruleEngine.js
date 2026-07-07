@@ -11,9 +11,23 @@ async function processEvent(eventType, payload) {
 
   // Extract common data from different GitHub events
   if (eventType === "issues") {
+    if (payload.action !== "opened") {
+      return {
+        success: true,
+        matched: false,
+        message: `Ignoring issue action: ${payload.action}`,
+      };
+    }
     title = payload.issue.title;
     number = payload.issue.number;
   } else if (eventType === "pull_request") {
+    if (payload.action !== "opened") {
+      return {
+        success: true,
+        matched: false,
+        message: `Ignoring PR action: ${payload.action}`,
+      };
+    }
     title = payload.pull_request.title;
     number = payload.pull_request.number;
   } else {
