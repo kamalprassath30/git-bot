@@ -6,6 +6,7 @@ const octokit = new Octokit({
 });
 
 async function addLabel(issueNumber, label) {
+  console.log("GitHub Session:", githubSession);
   console.log(`Adding label "${label}" to issue #${issueNumber}`);
 
   console.log({
