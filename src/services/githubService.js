@@ -18,8 +18,8 @@ async function addLabel(owner, repo, issueNumber, label) {
 
   try {
     await octokit.rest.issues.addLabels({
-      owner: githubSession.selectedRepo.owner,
-      repo: githubSession.selectedRepo.repo,
+      owner: owner,
+      repo: repo,
       issue_number: issueNumber,
       labels: [label],
     });
