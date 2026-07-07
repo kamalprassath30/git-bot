@@ -78,4 +78,27 @@ router.get("/github/callback", async (req, res) => {
   }
 });
 
+router.post("/select-repo", (req, res) => {
+  const { full_name } = req.body;
+
+  if (!full_name) {
+    return res.status(400).json({
+      success: false,
+      message: "Repository name is required",
+    });
+  }
+
+  const [owner, repo] = full_name.split("/");
+
+  githubSession.selectedRepo = {
+    owner,
+    repo,
+  };
+
+  res.json({
+    success: true,
+    selectedRepo: githubSession.selectedRepo,
+  });
+});
+
 module.exports = router;
