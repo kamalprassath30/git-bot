@@ -14,7 +14,9 @@
     "axios": "^1.x",
     "cors": "^2.x",
     "dotenv": "^17.x",
-    "express": "^5.x"
+    "express": "^5.x",
+    "octokit": "^5.0.5",
+    "pg": "^8.22.0"
   },
   "devDependencies": {
     "nodemon": "^3.x"
