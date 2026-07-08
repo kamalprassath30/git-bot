@@ -1,7 +1,10 @@
 const express = require("express");
 const axios = require("axios");
+const jwt = require("jsonwebtoken");
+
 const githubSession = require("../config/session");
 const pool = require("../database/db");
+
 const router = express.Router();
 
 router.get("/github", (req, res) => {
@@ -34,10 +37,7 @@ router.get("/github/callback", async (req, res) => {
 
     const accessToken = tokenResponse.data.access_token;
 
-    // Save access token temporarily
-    githubSession.accessToken = accessToken;
-
-    // Fetch logged-in user
+    // Fetch GitHub user
     const userResponse = await axios.get("https://api.github.com/user", {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -46,24 +46,27 @@ router.get("/github/callback", async (req, res) => {
 
     const githubUser = userResponse.data;
 
-    await pool.query(
+    // Save user and get database id
+    const userResult = await pool.query(
       `
-    INSERT INTO users
-    (
+      INSERT INTO users
+      (
         github_id,
         username,
         name,
         email,
         access_token
-    )
-    VALUES ($1,$2,$3,$4,$5)
+      )
+      VALUES ($1,$2,$3,$4,$5)
 
-    ON CONFLICT (github_id)
-    DO UPDATE SET
+      ON CONFLICT (github_id)
+      DO UPDATE SET
         access_token = EXCLUDED.access_token,
         name = EXCLUDED.name,
         email = EXCLUDED.email
-    `,
+
+      RETURNING id
+      `,
       [
         githubUser.id,
         githubUser.login,
@@ -73,17 +76,31 @@ router.get("/github/callback", async (req, res) => {
       ],
     );
 
-    // Save user temporarily
-    githubSession.username = userResponse.data.login;
+    const userId = userResult.rows[0].id;
 
-    // Fetch user's repositories
+    // Generate JWT
+    const token = jwt.sign(
+      {
+        id: userId,
+        username: githubUser.login,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "7d",
+      },
+    );
+
+    // Temporary session (remove later)
+    githubSession.accessToken = accessToken;
+    githubSession.username = githubUser.login;
+
+    // Fetch repositories
     const repoResponse = await axios.get("https://api.github.com/user/repos", {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
     });
 
-    // Save repositories temporarily
     githubSession.repositories = repoResponse.data.map((repo) => ({
       name: repo.name,
       full_name: repo.full_name,
@@ -91,10 +108,13 @@ router.get("/github/callback", async (req, res) => {
 
     res.json({
       success: true,
+      token,
+
       user: {
-        login: userResponse.data.login,
-        name: userResponse.data.name,
+        login: githubUser.login,
+        name: githubUser.name,
       },
+
       repositories: githubSession.repositories,
     });
   } catch (err) {
