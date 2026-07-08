@@ -107,7 +107,7 @@ router.get("/github/callback", async (req, res) => {
   }
 });
 
-router.post("/select-repo", (req, res) => {
+router.post("/select-repo", async (req, res) => {
   const { full_name } = req.body;
 
   if (!full_name) {
@@ -118,6 +118,16 @@ router.post("/select-repo", (req, res) => {
   }
 
   const [owner, repo] = full_name.split("/");
+
+  await pool.query(
+    `
+    UPDATE users
+    SET repo_owner = $1,
+        repo_name = $2
+    WHERE username = $3
+    `,
+    [owner, repo, githubSession.username],
+  );
 
   githubSession.selectedRepo = {
     owner,
