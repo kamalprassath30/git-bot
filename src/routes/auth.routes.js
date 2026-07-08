@@ -1,7 +1,7 @@
 const express = require("express");
 const axios = require("axios");
 const githubSession = require("../config/session");
-
+const pool = require("../database/db");
 const router = express.Router();
 
 router.get("/github", (req, res) => {
@@ -43,6 +43,35 @@ router.get("/github/callback", async (req, res) => {
         Authorization: `Bearer ${accessToken}`,
       },
     });
+
+    const githubUser = userResponse.data;
+
+    await pool.query(
+      `
+    INSERT INTO users
+    (
+        github_id,
+        username,
+        name,
+        email,
+        access_token
+    )
+    VALUES ($1,$2,$3,$4,$5)
+
+    ON CONFLICT (github_id)
+    DO UPDATE SET
+        access_token = EXCLUDED.access_token,
+        name = EXCLUDED.name,
+        email = EXCLUDED.email
+    `,
+      [
+        githubUser.id,
+        githubUser.login,
+        githubUser.name,
+        githubUser.email,
+        accessToken,
+      ],
+    );
 
     // Save user temporarily
     githubSession.username = userResponse.data.login;
