@@ -117,7 +117,7 @@ router.get("/github/callback", async (req, res) => {
 
     //   repositories: githubSession.repositories,
     // });
-    res.redirect(`http://localhost:5173/dashboard?token=${token}`);
+    res.redirect(`${process.env.FRONTEND_URL}/dashboard?token=${token}`);
   } catch (err) {
     console.error(err.response?.data || err.message);
 
