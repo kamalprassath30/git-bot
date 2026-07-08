@@ -1,9 +1,10 @@
 const express = require("express");
 const pool = require("../database/db");
+const authenticate = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-router.get("/", async (req, res) => {
+router.get("/", authenticate, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT *

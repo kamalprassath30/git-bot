@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 
 const githubSession = require("../config/session");
 const pool = require("../database/db");
-
+const authenticate = require("../middleware/authMiddleware");
 const router = express.Router();
 
 router.get("/github", (req, res) => {
@@ -106,17 +106,18 @@ router.get("/github/callback", async (req, res) => {
       full_name: repo.full_name,
     }));
 
-    res.json({
-      success: true,
-      token,
+    // res.json({
+    //   success: true,
+    //   token,
 
-      user: {
-        login: githubUser.login,
-        name: githubUser.name,
-      },
+    //   user: {
+    //     login: githubUser.login,
+    //     name: githubUser.name,
+    //   },
 
-      repositories: githubSession.repositories,
-    });
+    //   repositories: githubSession.repositories,
+    // });
+    res.redirect(`http://localhost:5173/dashboard?token=${token}`);
   } catch (err) {
     console.error(err.response?.data || err.message);
 
@@ -158,6 +159,42 @@ router.post("/select-repo", async (req, res) => {
     success: true,
     selectedRepo: githubSession.selectedRepo,
   });
+});
+
+router.get("/me", authenticate, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `
+      SELECT 
+        username,
+        name,
+        repo_owner,
+        repo_name
+      FROM users
+      WHERE id = $1
+      `,
+      [req.user.id],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      user: result.rows[0],
+    });
+  } catch (err) {
+    console.error(err);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch user",
+    });
+  }
 });
 
 module.exports = router;
