@@ -1,6 +1,8 @@
 const rules = require("../config/rules");
 const { addLabel } = require("./githubService");
 const { sendNotification } = require("./slackService");
+const { saveLog } = require("./logService");
+const pool = require("../database/db");
 
 async function processEvent(eventType, payload) {
   console.log("Rule Engine Processing...");
@@ -54,6 +56,25 @@ async function processEvent(eventType, payload) {
     };
   }
 
+  const userResult = await pool.query(
+    `
+    SELECT id
+    FROM users
+    WHERE repo_owner = $1
+      AND repo_name = $2
+    `,
+    [owner, repo],
+  );
+
+  if (userResult.rows.length === 0) {
+    return {
+      success: false,
+      message: "No user found for this repository",
+    };
+  }
+
+  const userId = userResult.rows[0].id;
+
   for (const rule of rules) {
     if (title.toLowerCase().includes(rule.keyword.toLowerCase())) {
       let actionResults = [];
@@ -73,7 +94,14 @@ async function processEvent(eventType, payload) {
           actionResults.push(result);
         }
       }
-
+      await saveLog({
+        userId,
+        eventType,
+        eventTitle: title,
+        action: rule.actions.join(", "),
+        status: "SUCCESS",
+        message: `Rule '${rule.keyword}' matched`,
+      });
       return {
         success: true,
         matched: true,
