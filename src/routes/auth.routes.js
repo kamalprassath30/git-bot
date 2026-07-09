@@ -197,4 +197,49 @@ router.get("/me", authenticate, async (req, res) => {
   }
 });
 
+router.get("/repositories", authenticate, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `
+      SELECT access_token
+      FROM users
+      WHERE id = $1
+      `,
+      [req.user.id],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+    // console.log("Gitub token: ", result.rows);
+    const accessToken = result.rows[0].access_token;
+
+    const repoResponse = await axios.get("https://api.github.com/user/repos", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    const repositories = repoResponse.data.map((repo) => ({
+      name: repo.name,
+      full_name: repo.full_name,
+    }));
+
+    res.json({
+      success: true,
+      repositories,
+    });
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch repositories",
+    });
+  }
+});
+
 module.exports = router;

@@ -4,10 +4,10 @@ const { sendNotification } = require("./slackService");
 const { saveLog } = require("./logService");
 const pool = require("../database/db");
 
-async function processEvent(eventType, payload) {
+async function processEvent(eventType, payload, deliveryId) {
   console.log("Rule Engine Processing...");
   console.log("Event:", eventType);
-
+  console.log(payload);
   let title;
   let number;
   let owner;
@@ -101,6 +101,7 @@ async function processEvent(eventType, payload) {
         action: rule.actions.join(", "),
         status: "SUCCESS",
         message: `Rule '${rule.keyword}' matched`,
+        deliveryId,
       });
       return {
         success: true,

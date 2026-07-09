@@ -7,6 +7,7 @@ async function saveLog({
   action,
   status,
   message,
+  deliveryId,
 }) {
   await pool.query(
     `
@@ -17,11 +18,12 @@ async function saveLog({
       event_title,
       action,
       status,
-      message
+      message,
+      delivery_id
     )
-    VALUES ($1,$2,$3,$4,$5,$6)
+    VALUES ($1,$2,$3,$4,$5,$6, $7)
     `,
-    [userId, eventType, eventTitle, action, status, message],
+    [userId, eventType, eventTitle, action, status, message, deliveryId],
   );
 }
 

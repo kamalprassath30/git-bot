@@ -18,6 +18,7 @@
 
 const { processEvent } = require("../services/ruleEngine");
 const express = require("express");
+const pool = require("../database/db");
 
 const router = express.Router();
 
@@ -25,10 +26,26 @@ router.post("/github", async (req, res) => {
   try {
     const eventType = req.headers["x-github-event"];
     const payload = req.body;
+    const deliveryId = req.header("X-GitHub-Delivery");
 
     console.log("GitHub Event:", eventType);
 
-    const result = await processEvent(eventType, payload);
+    const existing = await pool.query(
+      `
+    SELECT id
+    FROM bot_logs
+    WHERE delivery_id = $1
+    `,
+      [deliveryId],
+    );
+
+    if (existing.rows.length > 0) {
+      return res.status(200).json({
+        success: true,
+        message: "Duplicate webhook ignored",
+      });
+    }
+    const result = await processEvent(eventType, payload, deliveryId);
 
     res.status(200).json(result);
   } catch (error) {
